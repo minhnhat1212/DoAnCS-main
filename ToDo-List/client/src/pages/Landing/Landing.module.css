@@ -1,0 +1,42 @@
+.landing__container {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+.landing__wrapper{
+    display:flex;
+    flex-wrap: wrap;
+    margin-top: 100px;
+    padding: 2rem;
+}
+
+.landing__text{
+    width: 40%;
+}
+
+.landing__title{
+    font-size: 4rem;
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.landing__img{
+    width: 50%;
+    margin-left: 2rem;
+   
+}
+
+.landing__img img{
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.landing__img img:hover {
+    transform: scale(1.05);
+}

@@ -1,0 +1,100 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  background-color: white;
+  box-shadow: 0px 0.233px 8px lightgray;
+  transition: background-color 0.3s ease;
+}
+
+.header:hover {
+  background-color: #f9f9f9;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 2rem;
+}
+
+.logo__wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  width: 30px;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.1);
+}
+
+.logo__wrapper h4 {
+  font-weight: bold;
+  margin: 0px;
+  margin-left: 10px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.navigation_menu {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  padding-right: 2rem;
+}
+
+.navigation_menu li {
+  position: relative;
+}
+
+.navigation_menu li a {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  padding: 1rem 2rem;
+  font-size: 15px;
+  color: rgb(82, 81, 81);
+  transition: color 0.3s ease;
+}
+
+.navigation_menu li a:hover:not(.activeNav) {
+  background-color: whitesmoke;
+  color: var(--primary);
+}
+
+.activeNav {
+  background-color: whitesmoke;
+  color: var(--primary);
+}
+
+.userInfoNav {
+  border: 1px solid lightgray;
+  padding: 5px 20px;
+  border-radius: 5px;
+  margin-left: 10px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.userInfoNav:hover {
+  background-color: #f0f0f0;
+}
+
+.userInfoNav img {
+  width: 30px;
+  margin-right: 5px;
+} 
