@@ -157,6 +157,7 @@ function ToDoList() {
       const now = dayjs().tz('Asia/Ho_Chi_Minh');
 
       allToDo.forEach(async task => {
+        // Xử lý thông báo cho task chính
         if (task.startTime && dayjs(task.startTime).tz('Asia/Ho_Chi_Minh').isBefore(now) && task.notifyStart) {
           await sendNotification(
             `Task "${task.title}" đã bắt đầu!`,
@@ -199,6 +200,66 @@ function ToDoList() {
             }
           }
           ToDoServices.updateNotify(task._id, { notifyEnd: false });
+        }
+
+        // Xử lý thông báo cho subtasks
+        if (task.subTasks && task.subTasks.length > 0) {
+          const updatedSubTasks = [...task.subTasks];
+          let hasChanges = false;
+
+          for (let i = 0; i < updatedSubTasks.length; i++) {
+            const subTask = updatedSubTasks[i];
+            
+            if (subTask.startTime && dayjs(subTask.startTime).tz('Asia/Ho_Chi_Minh').isBefore(now) && subTask.notifyStart) {
+              await sendNotification(
+                `Subtask "${subTask.title}" của task "${task.title}" đã bắt đầu!`,
+                `Subtask "${subTask.title}" đã bắt đầu lúc ${dayjs(subTask.startTime).format('HH:mm DD/MM/YYYY')}`,
+                'start',
+                task._id
+              );
+              if (task.notifyEmail) {
+                try {
+                  await ToDoServices.sendEmailNotification({
+                    email: task.notifyEmail,
+                    subject: `Subtask "${subTask.title}" của task "${task.title}" đã bắt đầu!`,
+                    message: `Subtask "${subTask.title}" đã bắt đầu lúc ${dayjs(subTask.startTime).format('HH:mm DD/MM/YYYY')}`,
+                    task: { ...task, ...subTask }
+                  });
+                } catch (err) {
+                  console.error('Failed to send email notification:', err);
+                }
+              }
+              updatedSubTasks[i].notifyStart = false;
+              hasChanges = true;
+            }
+
+            if (subTask.endTime && dayjs(subTask.endTime).tz('Asia/Ho_Chi_Minh').isBefore(now) && subTask.notifyEnd) {
+              await sendNotification(
+                `Subtask "${subTask.title}" của task "${task.title}" đã kết thúc!`,
+                `Subtask "${subTask.title}" đã kết thúc lúc ${dayjs(subTask.endTime).format('HH:mm DD/MM/YYYY')}`,
+                'end',
+                task._id
+              );
+              if (task.notifyEmail) {
+                try {
+                  await ToDoServices.sendEmailNotification({
+                    email: task.notifyEmail,
+                    subject: `Subtask "${subTask.title}" của task "${task.title}" đã kết thúc!`,
+                    message: `Subtask "${subTask.title}" đã kết thúc lúc ${dayjs(subTask.endTime).format('HH:mm DD/MM/YYYY')}`,
+                    task: { ...task, ...subTask }
+                  });
+                } catch (err) {
+                  console.error('Failed to send email notification:', err);
+                }
+              }
+              updatedSubTasks[i].notifyEnd = false;
+              hasChanges = true;
+            }
+          }
+
+          if (hasChanges) {
+            await ToDoServices.updateToDo(task._id, { subTasks: updatedSubTasks });
+          }
         }
 
         // Check for overdue tasks (1 hour after end time)
@@ -312,17 +373,40 @@ function ToDoList() {
 
   const handleSubTaskDateChange = (index, date) => {
     const updatedSubTasks = [...subTasks];
-    updatedSubTasks[index]['date'] = date;
+    if (!updatedSubTasks[index].startTime) {
+      updatedSubTasks[index].startTime = new Date(date).toISOString();
+    } else {
+      const currentDate = new Date(updatedSubTasks[index].startTime);
+      const newDate = new Date(date);
+      currentDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+      updatedSubTasks[index].startTime = currentDate.toISOString();
+    }
     setSubTasks(updatedSubTasks);
   };
 
   const handleSubTaskTimeChange = (index, time) => {
     const updatedSubTasks = [...subTasks];
-    updatedSubTasks[index]['time'] = time;
+    if (!updatedSubTasks[index].startTime) {
+      updatedSubTasks[index].startTime = new Date(time).toISOString();
+    } else {
+      const currentDate = new Date(updatedSubTasks[index].startTime);
+      const newTime = new Date(time);
+      currentDate.setHours(newTime.getHours(), newTime.getMinutes());
+      updatedSubTasks[index].startTime = currentDate.toISOString();
+    }
     setSubTasks(updatedSubTasks);
   };
 
-  const addSubTask = () => setSubTasks([...subTasks, { title: '', description: '', isCompleted: false, date: null, time: null }]);
+  const addSubTask = () => setSubTasks([...subTasks, { 
+    title: '', 
+    description: '', 
+    isCompleted: false, 
+    startTime: null, 
+    endTime: null,
+    notifyStart: true,
+    notifyEnd: true,
+    notifyEmail: ''
+  }]);
 
   const handleToggleSubTask = async (taskId, subTaskIndex, newStatus) => {
     try {
@@ -343,7 +427,7 @@ function ToDoList() {
     setUpdatedSubTasks(updated);
   };
 
-  const addUpdatedSubTask = () => setUpdatedSubTasks([...updatedSubTasks, { title: '', description: '', isCompleted: false, date: null, time: null }]);
+  const addUpdatedSubTask = () => setUpdatedSubTasks([...updatedSubTasks, { title: '', description: '', isCompleted: false, startTime: null, endTime: null }]);
 
   const handleUpdateTask = async () => {
     try {
@@ -445,7 +529,19 @@ function ToDoList() {
           <div className={styles.subTaskList}>
             {item.subTasks.map((subTask, index) => (
               <div key={index} className={styles.subTaskItem}>
-                <p className={subTask.isCompleted ? styles.completedSubTask : ''}>{subTask.title}</p>
+                <div>
+                  <p className={subTask.isCompleted ? styles.completedSubTask : ''}>{subTask.title}</p>
+                  {subTask.startTime && (
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Bắt đầu: {new Date(subTask.startTime).toLocaleString('vi-VN')}
+                    </div>
+                  )}
+                  {subTask.endTime && (
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Kết thúc: {new Date(subTask.endTime).toLocaleString('vi-VN')}
+                    </div>
+                  )}
+                </div>
                 <div className={styles.subTaskActions}>
                   <CheckCircleOutlined
                     onClick={() => handleToggleSubTask(item._id, index, !subTask.isCompleted)}
@@ -610,9 +706,73 @@ function ToDoList() {
                   onChange={e => handleSubTaskChange(index, 'description', e.target.value)}
                   style={{ marginBottom: 8 }}
                 />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <DatePicker value={subTask.date} onChange={date => handleSubTaskDateChange(index, date)} placeholder="Ngày bắt đầu" style={{ width: 140 }} />
-                  <TimePicker value={subTask.time} onChange={time => handleSubTaskTimeChange(index, time)} placeholder="Giờ bắt đầu" format="HH:mm" style={{ width: 120 }} />
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <DatePicker 
+                    value={subTask.startTime ? dayjs(subTask.startTime) : null} 
+                    onChange={date => handleSubTaskDateChange(index, date)} 
+                    placeholder="Ngày bắt đầu" 
+                    style={{ width: 140 }} 
+                  />
+                  <TimePicker 
+                    value={subTask.startTime ? dayjs(subTask.startTime) : null} 
+                    onChange={time => handleSubTaskTimeChange(index, time)} 
+                    placeholder="Giờ bắt đầu" 
+                    format="HH:mm" 
+                    style={{ width: 120 }} 
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <DatePicker 
+                    value={subTask.endTime ? dayjs(subTask.endTime) : null} 
+                    onChange={date => {
+                      const updatedSubTasks = [...subTasks];
+                      if (!updatedSubTasks[index].endTime) {
+                        updatedSubTasks[index].endTime = new Date(date).toISOString();
+                      } else {
+                        const currentDate = new Date(updatedSubTasks[index].endTime);
+                        const newDate = new Date(date);
+                        currentDate.setFullYear(newDate.getFullYear(), newDate.getMonth(), newDate.getDate());
+                        updatedSubTasks[index].endTime = currentDate.toISOString();
+                      }
+                      setSubTasks(updatedSubTasks);
+                    }} 
+                    placeholder="Ngày kết thúc" 
+                    style={{ width: 140 }} 
+                  />
+                  <TimePicker 
+                    value={subTask.endTime ? dayjs(subTask.endTime) : null} 
+                    onChange={time => {
+                      const updatedSubTasks = [...subTasks];
+                      if (!updatedSubTasks[index].endTime) {
+                        updatedSubTasks[index].endTime = new Date(time).toISOString();
+                      } else {
+                        const currentDate = new Date(updatedSubTasks[index].endTime);
+                        const newTime = new Date(time);
+                        currentDate.setHours(newTime.getHours(), newTime.getMinutes());
+                        updatedSubTasks[index].endTime = currentDate.toISOString();
+                      }
+                      setSubTasks(updatedSubTasks);
+                    }} 
+                    placeholder="Giờ kết thúc" 
+                    format="HH:mm" 
+                    style={{ width: 120 }} 
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      checked={subTask.notifyStart} 
+                      onChange={e => handleSubTaskChange(index, 'notifyStart', e.target.checked)} 
+                    /> Bật thông báo khi bắt đầu
+                  </label>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      checked={subTask.notifyEnd} 
+                      onChange={e => handleSubTaskChange(index, 'notifyEnd', e.target.checked)} 
+                    /> Bật thông báo khi kết thúc
+                  </label>
                 </div>
               </div>
             ))}

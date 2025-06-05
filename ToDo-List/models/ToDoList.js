@@ -8,7 +8,10 @@ const subTaskSchema = new Schema({
     isCompleted: { type: Boolean, default: false },
     completedOn: { type: Date },
     startTime: { type: Date },
-    endTime: { type: Date }
+    endTime: { type: Date },
+    notifyStart: { type: Boolean, default: true },
+    notifyEnd: { type: Boolean, default: true },
+    notifyEmail: { type: String }
 });
 
 // Định nghĩa schema cho công việc (To-Do)
