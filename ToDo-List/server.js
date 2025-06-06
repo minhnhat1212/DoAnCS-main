@@ -1,15 +1,26 @@
+/**
+ * File server.js - File chính để khởi động và cấu hình server
+ * 
+ * File này chứa các cấu hình và khởi tạo cho server Node.js, bao gồm:
+ * - Kết nối database MongoDB
+ * - Cấu hình middleware
+ * - Định nghĩa routes
+ * - Cấu hình gửi email
+ * - Cấu hình cron job để tự động kiểm tra và thông báo task
+ */
+
 // Import các thư viện cần thiết
-const express = require('express');
-const app = express();
-const cors = require('cors');
-const mongoose = require('mongoose');
-const authRoutes = require('./routes/authRoutes'); // Đường dẫn cho chức năng đăng nhập/đăng ký
-const toDoRoutes = require('./routes/ToDoRoutes'); // Đường dẫn cho chức năng quản lý công việc (to-do)
-require('dotenv').config(); // Load các biến môi trường từ file .env
-const cron = require('node-cron');
-const nodemailer = require('nodemailer');
-const ToDo = require('./models/ToDoList');
-const User = require('./models/User');
+const express = require('express'); // Framework web cho Node.js
+const app = express(); // Khởi tạo ứng dụng Express
+const cors = require('cors'); // Middleware cho phép CORS
+const mongoose = require('mongoose'); // ODM để làm việc với MongoDB
+const authRoutes = require('./routes/authRoutes'); // Route xử lý đăng nhập/đăng ký
+const toDoRoutes = require('./routes/ToDoRoutes'); // Route xử lý quản lý công việc
+require('dotenv').config(); // Load biến môi trường từ file .env
+const cron = require('node-cron'); // Thư viện để lập lịch các tác vụ tự động
+const nodemailer = require('nodemailer'); // Thư viện gửi email
+const ToDo = require('./models/ToDoList'); // Model cho công việc
+const User = require('./models/User'); // Model cho người dùng
 
 // Cổng server sẽ chạy (nếu không có trong .env thì mặc định là 5000)
 const PORT = process.env.PORT || 5000;
@@ -33,7 +44,11 @@ mongoose.connect(process.env.DB_URL)
         console.log("Kết nối CSDL thất bại:", err); // Thông báo khi kết nối thất bại
     });
 
-// Cấu hình transporter cho nodemailer
+/**
+ * Cấu hình transporter cho nodemailer
+ * Sử dụng Gmail làm dịch vụ gửi mail
+ * Các thông tin xác thực được lấy từ biến môi trường
+ */
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   host: 'smtp.gmail.com',
@@ -57,7 +72,14 @@ transporter.verify(function(error, success) {
   }
 });
 
-// Hàm gửi mail
+/**
+ * Hàm gửi email thông báo task
+ * @param {string} to - Email người nhận
+ * @param {string} subject - Tiêu đề email
+ * @param {string} text - Nội dung email dạng text
+ * @param {Object} task - Thông tin task cần thông báo
+ * @returns {Promise<boolean>} - Trả về true nếu gửi thành công
+ */
 async function sendTaskMail(to, subject, text, task) {
   try {
     console.log('Đang gửi email đến:', to);
@@ -113,7 +135,15 @@ async function sendTaskMail(to, subject, text, task) {
   }
 }
 
-// Cron job: mỗi phút kiểm tra task đến giờ bắt đầu/kết thúc
+/**
+ * Cron job chạy mỗi phút để kiểm tra và xử lý các task
+ * Các chức năng chính:
+ * 1. Gửi thông báo khi task bắt đầu
+ * 2. Gửi thông báo khi task kết thúc
+ * 3. Gửi thông báo khi task quá hạn
+ * 4. Tự động đánh dấu task hoàn thành khi đến thời gian kết thúc
+ * 5. Cập nhật trạng thái các subtask khi task chính hoàn thành
+ */
 cron.schedule('* * * * *', async () => {
   try {
     const now = new Date();

@@ -1,8 +1,19 @@
+/**
+ * File toDoController.js - Xử lý logic quản lý công việc (To-Do)
+ * 
+ * File này chứa các hàm xử lý logic cho việc quản lý công việc,
+ * bao gồm tạo mới, lấy danh sách, cập nhật, xóa công việc và gửi thông báo qua email.
+ */
+
 const ToDo = require("../models/ToDoList");
 const User = require("../models/User");
 const nodemailer = require('nodemailer');
 
-// Cấu hình transporter cho nodemailer
+/**
+ * Cấu hình transporter cho nodemailer
+ * Sử dụng Gmail làm dịch vụ gửi mail
+ * Các thông tin xác thực được lấy từ biến môi trường
+ */
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   host: 'smtp.gmail.com',
@@ -17,8 +28,19 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Tạo công việc mới
-// Tạo công việc mới (hỗ trợ Subtask + Thời gian)
+/**
+ * Tạo công việc mới
+ * @param {Object} req - Request object từ Express
+ * @param {Object} res - Response object từ Express
+ * @returns {Object} Response với thông báo và dữ liệu công việc đã tạo
+ * 
+ * Quy trình:
+ * 1. Lấy thông tin công việc từ request body
+ * 2. Tạo công việc mới với thông tin đã lấy
+ * 3. Lưu công việc vào database
+ * 4. Gửi email thông báo nếu có cấu hình email
+ * 5. Trả về kết quả
+ */
 exports.createToDo = async (req, res) => {
     try {
         const {
@@ -110,7 +132,17 @@ exports.createToDo = async (req, res) => {
     }
 }
 
-// Lấy tất cả công việc của 1 người dùng
+/**
+ * Lấy danh sách công việc của người dùng
+ * @param {Object} req - Request object từ Express
+ * @param {Object} res - Response object từ Express
+ * @returns {Object} Response với danh sách công việc
+ * 
+ * Quy trình:
+ * 1. Lấy userId từ request params
+ * 2. Tìm tất cả công việc được tạo bởi userId
+ * 3. Trả về danh sách công việc
+ */
 exports.getAllToDo = async (req, res) => {
     let { userId } = req.params;
 
@@ -123,7 +155,19 @@ exports.getAllToDo = async (req, res) => {
     }
 }
 
-// Cập nhật công việc
+/**
+ * Cập nhật công việc
+ * @param {Object} req - Request object từ Express
+ * @param {Object} res - Response object từ Express
+ * @returns {Object} Response với thông báo cập nhật thành công
+ * 
+ * Quy trình:
+ * 1. Lấy id công việc từ request params
+ * 2. Lấy dữ liệu cập nhật từ request body
+ * 3. Cập nhật công việc trong database
+ * 4. Gửi email thông báo nếu công việc được đánh dấu hoàn thành
+ * 5. Trả về kết quả
+ */
 exports.updateToDo = async (req, res) => {
     try {
         const { id } = req.params;
@@ -191,7 +235,17 @@ exports.updateToDo = async (req, res) => {
     }
 }
 
-// Xóa công việc
+/**
+ * Xóa công việc
+ * @param {Object} req - Request object từ Express
+ * @param {Object} res - Response object từ Express
+ * @returns {Object} Response với thông báo xóa thành công
+ * 
+ * Quy trình:
+ * 1. Lấy id công việc từ request params
+ * 2. Xóa công việc khỏi database
+ * 3. Trả về kết quả
+ */
 exports.deleteToDo = async (req, res) => {
     try {
         const { id } = req.params;
@@ -204,7 +258,18 @@ exports.deleteToDo = async (req, res) => {
     }
 }
 
-// Cập nhật thông báo start/end
+/**
+ * Cập nhật cài đặt thông báo của công việc
+ * @param {Object} req - Request object từ Express
+ * @param {Object} res - Response object từ Express
+ * @returns {Object} Response với thông báo cập nhật thành công
+ * 
+ * Quy trình:
+ * 1. Lấy id công việc từ request params
+ * 2. Lấy cài đặt thông báo từ request body
+ * 3. Cập nhật cài đặt thông báo trong database
+ * 4. Trả về kết quả
+ */
 exports.updateNotify = async (req, res) => {
     try {
         const { id } = req.params;
