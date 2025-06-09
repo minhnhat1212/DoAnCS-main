@@ -1,11 +1,13 @@
 import React,{useState} from 'react'
 import styles from './Login.module.css';
 import login from '../../assets/login.png';
-import {Button, Input, message} from 'antd';
+import {Button, Input, message, Divider} from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthServices from '../../services/authServices';
 import { getErrorMessage } from '../../util/GetError';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 function Login() {
   const [username,setUsername] = useState("");
@@ -32,6 +34,30 @@ function Login() {
       setLoading(false);
     }
   }
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const decoded = jwtDecode(credentialResponse.credential);
+      console.log(decoded);
+      // Gửi thông tin Google user lên server để xử lý
+      const response = await AuthServices.loginWithGoogle({
+        email: decoded.email,
+        name: decoded.name,
+        picture: decoded.picture
+      });
+      localStorage.setItem('toDoAppUser', JSON.stringify(response.data));
+      message.success("Logged in with Google Successfully!");
+      navigate('/to-do-list');
+    } catch (err) {
+      console.log(err);
+      message.error(getErrorMessage(err));
+    }
+  };
+
+  const handleGoogleError = () => {
+    message.error("Google login failed!");
+  };
+
   return (
     <div className={styles.login__container}>
       <div className={styles.login__card}>
@@ -69,6 +95,20 @@ function Login() {
           >
             Sign In
           </Button>
+
+          <Divider>Or</Divider>
+
+          <div className={styles.google__login}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+              theme="filled_blue"
+              shape="rectangular"
+              text="signin_with"
+              locale="en"
+            />
+          </div>
       </div>
     </div>
   )

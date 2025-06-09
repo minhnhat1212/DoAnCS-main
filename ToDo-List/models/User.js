@@ -7,7 +7,7 @@
 
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
-const bcrypt = require('bcrypt'); // Thư viện mã hóa mật khẩu
+const bcrypt = require('bcryptjs'); // Thư viện mã hóa mật khẩu
 
 /**
  * Schema cho người dùng
@@ -15,13 +15,55 @@ const bcrypt = require('bcrypt'); // Thư viện mã hóa mật khẩu
  * - firstName: Tên
  * - lastName: Họ
  * - username: Tên đăng nhập (bắt buộc)
- * - password: Mật khẩu (bắt buộc)
+ * - email: Email (tùy chọn)
+ * - password: Mật khẩu (bắt buộc nếu không phải là người dùng Google)
+ * - profilePicture: Hình ảnh đại diện (tùy chọn)
+ * - isGoogleUser: Kiểm tra xem người dùng có phải là người dùng Google không
+ * - createdAt: Thời gian tạo tài khoản
  */
 const userSchema = new Schema({
-    firstName: String,
-    lastName: String,
-    username: { type: String, required: true },
-    password: { type: String, required: true }
+    firstName: {
+        type: String,
+        required: function() {
+            return !this.isGoogleUser;
+        }
+    },
+    lastName: {
+        type: String,
+        required: function() {
+            return !this.isGoogleUser;
+        }
+    },
+    username: {
+        type: String,
+        required: function() {
+            return !this.isGoogleUser;
+        },
+        unique: true,
+        sparse: true // Allows multiple null values for username if not a Google user and username is not explicitly set
+    },
+    email: {
+        type: String,
+        unique: true,
+        sparse: true // Allows multiple null values for email
+    },
+    password: {
+        type: String,
+        required: function() {
+            return !this.isGoogleUser;
+        }
+    },
+    profilePicture: {
+        type: String
+    },
+    isGoogleUser: {
+        type: Boolean,
+        default: false
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
 /**
@@ -45,6 +87,7 @@ userSchema.pre("save", async function (next) {
  * @returns {Promise<boolean>} - Trả về true nếu mật khẩu khớp
  */
 userSchema.methods.comparePassword = async function (password) {
+    if (!this.password) return false;
     return bcrypt.compare(password, this.password);
 }
 

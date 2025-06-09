@@ -40,5 +40,18 @@ router.post('/register', AuthController.registerUser);
  */
 router.post('/login', AuthController.loginUser);
 
+/**
+ * Route đăng nhập bằng Google
+ * Method: POST
+ * URL: /api/login/google
+ * Body: {
+ *   email: string,
+ *   name: string,
+ *   picture: string
+ * }
+ * Response: Token JWT và thông tin người dùng
+ */
+router.post('/login/google', AuthController.loginWithGoogle);
+
 // Xuất router để sử dụng ở file khác
 module.exports = router;

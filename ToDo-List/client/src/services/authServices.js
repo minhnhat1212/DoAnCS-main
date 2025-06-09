@@ -11,10 +11,14 @@ const loginUser = (data)=>{
     return axios.post(SERVER_URL+'/login',data);
 }
 
+const loginWithGoogle = (data) => {
+    return axios.post(SERVER_URL+'/login/google', data);
+}
 
 const AuthServices = {
     registerUser,
-    loginUser
+    loginUser,
+    loginWithGoogle
 }
 
 

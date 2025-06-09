@@ -90,10 +90,65 @@ async function loginUser(req, res) {
     }
 }
 
+/**
+ * Hàm đăng nhập bằng Google
+ * @param {Object} req - Request object từ Express
+ * @param {Object} res - Response object từ Express
+ * @returns {Object} Response với thông tin người dùng và JWT token
+ */
+async function loginWithGoogle(req, res) {
+    try {
+        const { email, name, picture } = req.body;
+
+        // Tìm user theo email
+        let user = await User.findOne({ email });
+        
+        // Nếu user chưa tồn tại, tạo user mới
+        if (!user) {
+            let firstName = name;
+            let lastName = "";
+            const nameParts = name.split(' ');
+            if (nameParts.length > 1) {
+                firstName = nameParts[0];
+                lastName = nameParts.slice(1).join(' ');
+            }
+            
+            user = new User({
+                email,
+                username: email, // Gán email làm username cho tài khoản Google
+                firstName,
+                lastName,
+                profilePicture: picture,
+                isGoogleUser: true
+            });
+            await user.save();
+        }
+
+        // Tạo JWT token
+        let token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
+
+        // Trả về thông tin user + token
+        let finalData = {
+            userId: user._id,
+            email: user.email,
+            username: user.username, // Thêm username vào finalData
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profilePicture: user.profilePicture,
+            token
+        }
+        res.send(finalData);
+    } catch (err) {
+        console.log(err);
+        res.status(400).send({ message: 'Đã xảy ra lỗi khi đăng nhập bằng Google!' });
+    }
+}
+
 // Export controller
 const AuthController = {
     registerUser,
-    loginUser
+    loginUser,
+    loginWithGoogle
 }
 
 module.exports = AuthController;
